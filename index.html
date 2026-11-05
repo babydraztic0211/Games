@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#05060f" />
+<meta name="description" content="Rift Swarm — a neon arena survival game. Hold the line against the swarm." />
+<title>Rift Swarm — Neon Arena Survival</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2305060f'/%3E%3Cpath d='M32 6 56 32 32 58 8 32Z' fill='none' stroke='%2345f4ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23ff3fa4'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<canvas id="game" aria-label="Rift Swarm arena"></canvas>
+
+<div class="fx-layer" aria-hidden="true">
+  <div id="damage-flash"></div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hud hidden">
+  <div class="hud-top">
+    <div class="hud-block hull-block">
+      <div class="hud-label"><span>HULL</span><b id="hp-text">100</b></div>
+      <div class="meter hp"><i id="hp-fill"></i></div>
+      <div class="hud-sub">
+        <span id="lvl-badge" class="lvl-badge">LV 1</span>
+        <div class="meter xp"><i id="xp-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <div id="wave-label" class="wave-label">WAVE 1</div>
+      <div id="boss-wrap" class="boss-wrap hidden">
+        <div class="boss-name" id="boss-name">RIFT WARDEN</div>
+        <div class="meter boss"><i id="boss-fill"></i></div>
+      </div>
+    </div>
+
+    <div class="hud-block score-block">
+      <div class="score" id="score">000000</div>
+      <div class="hud-label small">SCORE</div>
+      <div class="hud-sub right">
+        <span id="best-inline">BEST 0</span>
+        <span id="combo" class="combo hidden">&times;2</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud-bottom">
+    <div id="hint" class="hint">WASD MOVE &middot; MOUSE AIM &middot; SPACE DASH &middot; P PAUSE</div>
+    <div id="dash-meter" class="dash-meter">
+      <span>DASH</span>
+      <div class="meter dash"><i id="dash-fill"></i></div>
+    </div>
+    <div class="hud-actions">
+      <button id="mute-btn" class="icon-btn" type="button" aria-label="Toggle sound" title="Toggle sound">&#9834;</button>
+      <button id="pause-btn" class="icon-btn" type="button" aria-label="Pause game" title="Pause (P)">&#10073;&#10073;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOUCH CONTROLS ============ -->
+<div id="touch-controls" class="touch-controls hidden">
+  <div id="joystick" class="joystick" aria-hidden="true">
+    <div class="joystick-ring"></div>
+    <div id="stick-knob" class="knob"></div>
+  </div>
+  <button id="dash-btn" class="dash-btn" type="button" aria-label="Dash">
+    <span>DASH</span>
+    <i id="dash-btn-fill"></i>
+  </button>
+</div>
+
+<!-- ============ TITLE ============ -->
+<div id="title-screen" class="screen screen-title">
+  <div class="title-deco tl">SECTOR 07 <span>// ORBITAL DEFENSE</span></div>
+  <div class="title-deco tr">BUILD 2.6.1</div>
+  <div class="title-deco bl">SIGNAL <span class="ok">STABLE</span></div>
+  <div class="title-deco br">RIFT PROTOCOL &copy; 2186</div>
+
+  <div class="title-wrap">
+    <div class="eyebrow"><i></i> CONTAINMENT BREACH DETECTED</div>
+    <h1 class="logo">
+      <span class="logo-rift">RIFT</span>
+      <span class="logo-swarm">SWARM</span>
+    </h1>
+    <div class="logo-rule"><i></i><span>HOLD THE LINE</span><i></i></div>
+    <p class="tagline">The rift is open. Nothing gets through.</p>
+    <button id="play-btn" class="btn-primary play-btn" type="button">Play</button>
+
+    <div class="title-meta">
+      <div><span class="k">BEST SCORE</span><b id="title-best">0</b></div>
+      <div class="meta-divider"></div>
+      <div><span class="k">BEST WAVE</span><b id="title-best-wave">0</b></div>
+    </div>
+
+    <div class="controls-desktop">
+      <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVE</span>
+      <span><kbd>MOUSE</kbd> AIM</span>
+      <span><kbd>SPACE</kbd> DASH</span>
+      <span><kbd>P</kbd> PAUSE</span>
+    </div>
+    <div class="controls-touch">
+      <span>JOYSTICK &middot; MOVE</span>
+      <span>AUTO-AIM &middot; FIRE</span>
+      <span>BUTTON &middot; DASH</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause-screen" class="screen screen-dim hidden">
+  <div class="panel">
+    <div class="eyebrow">SIMULATION HALTED</div>
+    <h2 class="panel-title">PAUSED</h2>
+    <div class="panel-stats">
+      <div><span>WAVE</span><b id="pause-wave">1</b></div>
+      <div><span>SCORE</span><b id="pause-score">0</b></div>
+      <div><span>LEVEL</span><b id="pause-level">1</b></div>
+    </div>
+    <div class="btn-row">
+      <button id="resume-btn" class="btn-primary" type="button">Resume</button>
+      <button id="restart-btn" class="btn-ghost" type="button">Restart</button>
+      <button id="quit-btn" class="btn-ghost" type="button">Title</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LEVEL UP ============ -->
+<div id="levelup-screen" class="screen screen-dim hidden">
+  <div class="levelup-wrap">
+    <div class="eyebrow">NEURAL LINK EXPANDED</div>
+    <h2 class="levelup-title">LEVEL <span id="levelup-num">2</span></h2>
+    <p class="sub">CHOOSE A SYSTEM UPGRADE</p>
+    <div id="upgrade-cards" class="cards"></div>
+    <p class="key-hint">PRESS <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> OR CLICK</p>
+  </div>
+</div>
+
+<!-- ============ GAME OVER ============ -->
+<div id="gameover-screen" class="screen screen-dim hidden">
+  <div class="panel gameover-panel">
+    <div class="eyebrow danger">SIGNAL LOST</div>
+    <h2 class="panel-title">RUN TERMINATED</h2>
+    <div class="final-score"><span id="final-score">0</span><small>FINAL SCORE</small></div>
+    <div class="stats-grid">
+      <div><span>WAVE</span><b id="final-wave">1</b></div>
+      <div><span>KILLS</span><b id="final-kills">0</b></div>
+      <div><span>TIME</span><b id="final-time">0:00</b></div>
+      <div><span>LEVEL</span><b id="final-level">1</b></div>
+    </div>
+    <div id="new-best" class="new-best hidden">NEW BEST SCORE</div>
+    <div class="btn-row">
+      <button id="again-btn" class="btn-primary" type="button">Play Again</button>
+      <button id="menu-btn" class="btn-ghost" type="button">Title</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
